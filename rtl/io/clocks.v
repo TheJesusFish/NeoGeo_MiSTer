@@ -20,6 +20,7 @@
 
 module clocks_sync(
 	input CLK,
+	input TURBO,
 	input CLK_EN_24M_P,
 	input CLK_EN_24M_N,
 	input nRESETP,
@@ -40,17 +41,18 @@ module clocks_sync(
 	reg [2:0] CLK_DIV;
 	wire CLK_3M;
 	
-	assign CLK_68KCLKB = ~CLK_68KCLK;
+	//assign CLK_68KCLKB = ~CLK_68KCLK;
+	assign CLK_68KCLKB = CLK_EN_68K_N;
 	
 	always @(posedge CLK or negedge nRESETP)
 	begin
 		if (!nRESETP)
 			CLK_68KCLK <= 1'b0;	// Thanks ElectronAsh ! Real hw doesn't clearly init DFF
-		else if (CLK_EN_24M_P)
+		else if (CLK_EN_24M_P | TURBO)
 			CLK_68KCLK <= ~CLK_68KCLK;	// MV4 C4:A
 	end
-	assign CLK_EN_68K_P = ~CLK_68KCLK & CLK_EN_24M_P;
-	assign CLK_EN_68K_N =  CLK_68KCLK & CLK_EN_24M_P;
+	assign CLK_EN_68K_P = ~CLK_68KCLK & (CLK_EN_24M_P | TURBO);
+	assign CLK_EN_68K_N =  CLK_68KCLK & (CLK_EN_24M_P | TURBO);
 	
 	always @(posedge CLK, negedge nRESETP)
 	begin

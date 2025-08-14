@@ -26,7 +26,6 @@ set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) ../../h
 set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) ../../hdl/jt12_pm.v ]
 set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) ../../hdl/jt12_logsin.v ]
 set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) ../../hdl/jt12_reg.v ]
-set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) ../../hdl/jt12_reg_ch.v ]
 set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) ../../hdl/jt12_sh.v ]
 set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) ../../hdl/jt12_sh_rst.v ]
 set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) ../../hdl/jt12_sh24.v ]
@@ -39,6 +38,13 @@ set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) ../../h
 set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) ../../hdl/mixer/jt12_comb.v ]
 set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) ../../hdl/mixer/jt12_fm_uprate.v ]
 set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) ../../hdl/jt12_dout.v ]
+# SSG
+set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) ../../jt49/hdl/jt49.v       ]
+set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) ../../jt49/hdl/jt49_div.v   ]
+set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) ../../jt49/hdl/jt49_eg.v    ]
+set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) ../../jt49/hdl/jt49_exp.v   ]
+set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) ../../jt49/hdl/jt49_noise.v ]
+set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) ../../jt49/hdl/jt49_cen.v   ]
 # ADPCM
 set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) ../../hdl/adpcm/jt10_adpcm.v ]
 set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) ../../hdl/adpcm/jt10_adpcm_acc.v ]

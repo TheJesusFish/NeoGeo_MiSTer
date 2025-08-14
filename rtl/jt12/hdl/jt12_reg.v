@@ -333,7 +333,6 @@ jt12_reg_ch #(.NUM_CH(num_ch)) u_regch(
     .rl         ( rl            ),
     .ams_IV     ( ams_IV        ),
     .pms        ( pms_I         )
-);
-
+); 
 `endif
 endmodule

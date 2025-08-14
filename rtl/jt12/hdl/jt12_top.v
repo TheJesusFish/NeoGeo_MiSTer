@@ -67,7 +67,7 @@ module jt12_top (
     output  signed  [15:0] snd_right, // FM+PSG
     output  signed  [15:0] snd_left,  // FM+PSG
     output                 snd_sample,
-    input   [3:0]          snd_enable,
+	input   	    [ 3:0] snd_enable,
     input           [ 5:0] ch_enable, // ADPCM-A channels
     input           [ 7:0] debug_bus,
     output          [ 7:0] debug_view
@@ -174,16 +174,6 @@ wire [ 6:0] flag_mask;
 wire [ 1:0] div_setting;
 
 wire clk_en_2, clk_en_666, clk_en_111, clk_en_55;
-wire  signed  [15:0] adpcmAt_l;
-wire  signed  [15:0] adpcmAt_r;
-wire  signed  [15:0] adpcmBt_l;
-wire  signed  [15:0] adpcmBt_r;
-assign adpcmA_l = snd_enable[1] ? adpcmAt_l : 16'd0;
-assign adpcmA_r = snd_enable[1] ? adpcmAt_r : 16'd0;
-assign adpcmB_l = snd_enable[2] ? adpcmBt_l : 16'd0;
-assign adpcmB_r = snd_enable[2] ? adpcmBt_r : 16'd0;
-wire  [13:0] op_result_hdt;
-assign op_result_hd = snd_enable[0] ? op_result_hdt : 14'd0;
 
 assign debug_view = { 4'd0, flag_B, flag_A, div_setting };
 
@@ -224,8 +214,8 @@ if( use_adpcm==1 ) begin: gen_adpcm
         .flags      ( adpcma_flags  ),
         .clr_flags  ( flag_ctl[5:0] ),
 
-        .pcm55_l    ( adpcmAt_l      ),
-        .pcm55_r    ( adpcmAt_r      ),
+        .pcm55_l    ( adpcmA_l      ),
+        .pcm55_r    ( adpcmA_r      ),
         .ch_enable  ( ch_enable     )
     );
 
@@ -253,8 +243,8 @@ if( use_adpcm==1 ) begin: gen_adpcm
         .data       ( adpcmb_data   ),
         .roe_n      ( adpcmb_roe_n  ),
 
-        .pcm55_l    ( adpcmBt_l      ),
-        .pcm55_r    ( adpcmBt_r      )
+        .pcm55_l    ( adpcmB_l      ),
+        .pcm55_r    ( adpcmB_r      )
     );
 
     assign snd_sample   = zero;
@@ -488,8 +478,8 @@ generate
             // Unused:
             .sample     (           )
         );
-	assign snd_left  = snd_enable[3] ? fm_snd_left  + { 1'b0, psg_snd[9:0],5'd0} : fm_snd_left;
-        assign snd_right = snd_enable[3] ? fm_snd_right + { 1'b0, psg_snd[9:0],5'd0} : fm_snd_right;
+        assign snd_left  = fm_snd_left  + { 1'b0, psg_snd[9:0],5'd0};
+        assign snd_right = fm_snd_right + { 1'b0, psg_snd[9:0],5'd0};
     end else begin : gen_nossg
         assign psg_snd  = 10'd0;
         assign snd_left = fm_snd_left;
@@ -595,11 +585,11 @@ jt12_op #(.num_ch(num_ch)) u_op(
     .yuse_prev2     ( yuse_prev2    ),
     .zero           ( zero          ),
     .op_result      ( op_result     ),
-    .full_result    ( op_result_hdt )
+    .full_result    ( op_result_hd  )
 );
 `else
 assign op_result    = 'd0;
-assign op_result_hdt = 'd0;
+assign op_result_hd = 'd0;
 `endif
 
 generate

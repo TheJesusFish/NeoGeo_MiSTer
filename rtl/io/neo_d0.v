@@ -18,6 +18,7 @@
 
 module neo_d0(
 	input CLK,
+	input TURBO,
 	input CLK_EN_24M_P,
 	input CLK_EN_24M_N,
 	output CLK_24M,
@@ -54,16 +55,17 @@ module neo_d0(
 	reg [5:0] REG_OUT;
 	
 	// Clock divider part
-	clocks_sync CLKS(CLK, CLK_EN_24M_P, CLK_EN_24M_N, nRESETP, CLK_24M, CLK_12M, CLK_68KCLK, CLK_68KCLKB, CLK_EN_68K_P, CLK_EN_68K_N, CLK_6MB, CLK_1HB, CLK_EN_12M, CLK_EN_12M_N, CLK_EN_6MB, CLK_EN_1HB);
+	clocks_sync CLKS(CLK, TURBO, CLK_EN_24M_P, CLK_EN_24M_N, nRESETP, CLK_24M, CLK_12M, CLK_68KCLK, CLK_68KCLKB, CLK_EN_68K_P, CLK_EN_68K_N, CLK_6MB, CLK_1HB, CLK_EN_12M, CLK_EN_12M_N, CLK_EN_6MB, CLK_EN_1HB);
 	
 	// Z80 controller part
 	z80ctrl Z80CTRL(CLK, SDA_L, SDA_H, nSDRD, nSDWR, nMREQ, nIORQ, nSDW, nRESET, nZ80NMI, nSDZ80R, nSDZ80W,
 				nSDZ80CLR, nSDROM, nSDMRD, nSDMWR, SDRD0, SDRD1, n2610CS, n2610RD, n2610WR, nZRAMCS);
 	
-	assign {P2_OUT, P1_OUT} = REG_OUT;
-	assign BNK = REG_BNK;
+	assign {P2_OUT, P1_OUT} = nRESETP ? REG_OUT : 6'b000000;
+	assign BNK = nRESETP ? REG_BNK : 3'b000;
 
-	always @(posedge CLK) begin
+	always @(posedge CLK)
+	begin
 		reg nBITWD0_d;
 		nBITWD0_d <= nBITWD0;
 		if (!nBITWD0 & nBITWD0_d) begin
@@ -72,7 +74,6 @@ module neo_d0(
 			else
 				REG_OUT <= M68K_DATA[5:0];
 		end
-		if(~nRESETP) {REG_BNK, REG_OUT} <= 0;
 	end
 	
 endmodule

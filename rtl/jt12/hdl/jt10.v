@@ -35,7 +35,7 @@ module jt10(
     output          irq_n,
     // ADPCM pins
     output  [19:0]  adpcma_addr,  // real hardware has 10 pins multiplexed through RMPX pin
-    output  [4:0]   adpcma_bank,
+    output  [3:0]   adpcma_bank,
     output          adpcma_roe_n, // ADPCM-A ROM output enable
     input   [7:0]   adpcma_data,  // Data from RAM
     output  [23:0]  adpcmb_addr,  // real hardware has 12 pins multiplexed through PMPX pin
@@ -51,7 +51,7 @@ module jt10(
     output  signed  [15:0] snd_right,
     output  signed  [15:0] snd_left,
     output          snd_sample,
-    input   [3:0]   snd_enable,
+	input   [3:0]   snd_enable,
     input           [ 5:0] ch_enable // ADPCM-A channels
 );
 
@@ -102,11 +102,10 @@ u_jt12(
     .snd_right      ( snd_right    ),
     .snd_left       ( snd_left     ),
     .snd_sample     ( snd_sample   ),
-    .snd_enable     ( snd_enable   ),
     .ch_enable      ( ch_enable    ),
     // unused pins
     .en_hifi_pcm    ( 1'b0         ), // used only on YM2612 mode
     .debug_view     (              )
 );
 
-endmodule // jt03
+endmodule

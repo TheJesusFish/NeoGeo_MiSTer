@@ -354,7 +354,7 @@ always @(posedge clk) begin : memory_mapped_registers
                             6'h8, 6'h9, 6'hA, 6'hB, 6'hC, 6'hD: begin
                                 lracl <= din;
                                 up_lracl <= selected_register[2:0];
-										  exbank[selected_register[2:0]] <= &din[7:4];
+				exbank[selected_register[2:0]] <= &din[7:4];
                             end
                             6'b01_????, 6'b10_????: begin
                                 if( !selected_register[3] ) addr_a[ 7:0] <= din;
