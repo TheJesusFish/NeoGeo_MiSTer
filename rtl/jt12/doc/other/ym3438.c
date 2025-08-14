@@ -1,30 +1,30 @@
-/*
- * Copyright (C) 2017-2018 Alexey Khokholov (Nuke.YKT)
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *
- *
- *  Nuked OPN2(Yamaha YM3438) emulator.
- *  Thanks:
- *      Silicon Pr0n:
- *          Yamaha YM3438 decap and die shot(digshadow).
- *      OPLx decapsulated(Matthew Gambrell, Olli Niemitalo):
- *          OPL2 ROMs.
- *
- * version: 1.0.10
- */
+//
+// Copyright (C) 2017 Alexey Khokholov (Nuke.YKT)
+// 
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+//
+//
+//  Nuked OPN2(Yamaha YM3438) emulator.
+//  Thanks:
+//      Silicon Pr0n:
+//          Yamaha YM3438 decap and die shot(digshadow).
+//      OPLx decapsulated(Matthew Gambrell, Olli Niemitalo):
+//          OPL2 ROMs.
+//
+// version: 1.0.7
+//
 
 #include <string.h>
 #include "ym3438.h"
@@ -216,7 +216,7 @@ static const Bit32u fm_algorithm[4][6][8] = {
     }
 };
 
-static Bit32u chip_type = ym3438_mode_readmode;
+static Bit32u chip_type = ym3438_type_discrete;
 
 void OPN2_DoIO(ym3438_t *chip)
 {
@@ -362,7 +362,7 @@ void OPN2_DoRegWrite(ym3438_t *chip)
         /* Data */
         if (chip->write_d_en && (chip->write_data & 0x100) == 0)
         {
-            switch (chip->write_fm_mode_a)
+            switch (chip->address)
             {
             case 0x21: /* LSI test 1 */
                 for (i = 0; i < 8; i++)
@@ -441,7 +441,7 @@ void OPN2_DoRegWrite(ym3438_t *chip)
         /* Address */
         if (chip->write_a_en)
         {
-            chip->write_fm_mode_a = chip->write_data & 0x1ff;
+            chip->write_fm_mode_a = chip->write_data & 0xff;
         }
     }
 
@@ -531,12 +531,12 @@ void OPN2_PhaseGenerate(ym3438_t *chip)
     }
     /* Phase step */
     slot = (chip->cycles + 19) % 24;
+    chip->pg_phase[slot] += chip->pg_inc[slot];
+    chip->pg_phase[slot] &= 0xfffff;
     if (chip->pg_reset[slot] || chip->mode_test_21[3])
     {
         chip->pg_phase[slot] = 0;
     }
-    chip->pg_phase[slot] += chip->pg_inc[slot];
-    chip->pg_phase[slot] &= 0xfffff;
 }
 
 void OPN2_EnvelopeSSGEG(ym3438_t *chip)
@@ -981,7 +981,7 @@ void OPN2_ChOutput(ym3438_t *chip)
     chip->mol = 0;
     chip->mor = 0;
 
-    if (chip_type & ym3438_mode_ym2612)
+    if (chip_type == ym3438_type_ym2612)
     {
         out_en = ((cycles & 3) == 3) || test_dac;
         /* YM2612 DAC emulation(not verified) */
@@ -1014,6 +1014,11 @@ void OPN2_ChOutput(ym3438_t *chip)
     else
     {
         out_en = ((cycles & 3) != 0) || test_dac;
+        /* Discrete YM3438 seems has the ladder effect too */
+        if (out >= 0 && chip_type == ym3438_type_discrete)
+        {
+            out++;
+        }
         if (chip->ch_lock_l && out_en)
         {
             chip->mol = out;
@@ -1206,7 +1211,7 @@ void OPN2_SetChipType(Bit32u type)
     chip_type = type;
 }
 
-void OPN2_Clock(ym3438_t *chip, Bit16s *buffer)
+void OPN2_Clock(ym3438_t *chip, Bit32u *buffer)
 {
     Bit32u slot = chip->cycles;
     chip->lfo_inc = chip->mode_test_21[1];
@@ -1338,9 +1343,6 @@ void OPN2_Clock(ym3438_t *chip, Bit16s *buffer)
 
     buffer[0] = chip->mol;
     buffer[1] = chip->mor;
-
-    if (chip->status_time)
-        chip->status_time--;
 }
 
 void OPN2_Write(ym3438_t *chip, Bit32u port, Bit8u data)
@@ -1380,7 +1382,7 @@ Bit32u OPN2_ReadIRQPin(ym3438_t *chip)
 
 Bit8u OPN2_Read(ym3438_t *chip, Bit32u port)
 {
-    if ((port & 3) == 0 || (chip_type & ym3438_mode_readmode))
+    if ((port & 3) == 0 || chip_type == ym3438_type_asic)
     {
         if (chip->mode_test_21[6])
         {
@@ -1398,30 +1400,18 @@ Bit8u OPN2_Read(ym3438_t *chip, Bit32u port)
             }
             if (chip->mode_test_21[7])
             {
-                chip->status = testdata & 0xff;
+                return testdata & 0xff;
             }
             else
             {
-                chip->status = testdata >> 8;
+                return testdata >> 8;
             }
         }
         else
         {
-            chip->status = (chip->busy << 7) | (chip->timer_b_overflow_flag << 1)
+            return (chip->busy << 7) | (chip->timer_b_overflow_flag << 1)
                  | chip->timer_a_overflow_flag;
         }
-        if (chip_type & ym3438_mode_ym2612)
-        {
-            chip->status_time = 300000;
-        }
-        else
-        {
-            chip->status_time = 40000000;
-        }
-    }
-    if (chip->status_time)
-    {
-        return chip->status;
     }
     return 0;
 }

@@ -176,12 +176,9 @@ jt10_adpcm_gain u_gain(
 );
 
 wire signed [15:0] pre_pcm55_l, pre_pcm55_r;
-wire left_en, right_en;
 
-assign pcm55_l  = pre_pcm55_l;
-assign pcm55_r  = pre_pcm55_r;
-assign left_en  = lr[1] && (ch_enable & cur_ch)!=0;
-assign right_en = lr[0] && (ch_enable & cur_ch)!=0;
+assign pcm55_l = pre_pcm55_l;
+assign pcm55_r = pre_pcm55_r;
 
 jt10_adpcm_acc u_acc_left(
     .rst_n  ( rst_n     ),
@@ -192,10 +189,10 @@ jt10_adpcm_acc u_acc_left(
     .en_ch  ( en_ch     ),
     .match  ( match     ),
     // left/right enable
-    .en_sum ( left_en   ),
+    .en_sum ( lr[1] && (ch_enable & cur_ch) ),
 
     .pcm_in ( pcm_att   ),    // 18.5 kHz
-    .pcm_out(pre_pcm55_l)     // 55.5 kHz
+    .pcm_out( pre_pcm55_l   )     // 55.5 kHz
 );
 
 jt10_adpcm_acc u_acc_right(
@@ -207,10 +204,10 @@ jt10_adpcm_acc u_acc_right(
     .en_ch  ( en_ch     ),
     .match  ( match     ),
     // left/right enable
-    .en_sum ( right_en  ),
+    .en_sum ( lr[0] && (ch_enable & cur_ch) ),
 
     .pcm_in ( pcm_att   ),    // 18.5 kHz
-    .pcm_out(pre_pcm55_r)     // 55.5 kHz
+    .pcm_out( pre_pcm55_r   )     // 55.5 kHz
 );
 
 
@@ -253,8 +250,8 @@ always @(posedge cen6) if(en_ch[0]) begin
     end
 end
 
-reg [16:0] sim_start0, sim_start1, sim_start2, sim_start3, sim_start4, sim_start5;
-reg [16:0] sim_end0, sim_end1, sim_end2, sim_end3, sim_end4, sim_end5;
+reg [15:0] sim_start0, sim_start1, sim_start2, sim_start3, sim_start4, sim_start5;
+reg [15:0] sim_end0, sim_end1, sim_end2, sim_end3, sim_end4, sim_end5;
 reg [ 7:0] sim_lracl0, sim_lracl1, sim_lracl2, sim_lracl3, sim_lracl4, sim_lracl5;
 /*
 reg div3b;
