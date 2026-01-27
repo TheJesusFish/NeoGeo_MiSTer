@@ -289,7 +289,7 @@ localparam CONF_STR = {
 	"O1,System Type,Console(AES),Arcade(MVS);",
 	"OM,BIOS,UniBIOS,Original;",
 	"O3,Video Mode,NTSC,PAL;",
-	"oBC,Turbo (Unstable),Off,14MHz,18MHz;",
+	"oBC,Turbo (Unstable),Off,14MHz,18MHz,24MHz;",
 	"-;",
 	"o9A,Input,Joystick or Spinner,Joystick,Spinner,Mouse(Irr.Maze);",
 	"-;",
@@ -1087,6 +1087,7 @@ wire sdr2_en;
 
 sdram_mux SDRAM_MUX(
 	.CLK(CLK_96M),
+	.TURBO_SPEED(turbo_speed),
 	.nRESET(nRESET),
 	.nSYSTEM_G(nSYSTEM_G),
 	.SYSTEM_CDx(SYSTEM_CDx),
@@ -1637,6 +1638,7 @@ neo_c1 C1(
 	.SDD_RD(SDD_RD_C1),
 	.nSDZ80R(nSDZ80R), .nSDZ80W(nSDZ80W), .nSDZ80CLR(nSDZ80CLR),
 	.CLK_EN_68K_P(CLK_EN_68K_P),
+	.TURBO_SPEED(turbo_speed),
 	.nDTACK(nDTACK),
 	.nBITW0(nBITW0), .nBITW1(nBITW1),
 	.nDIPRD0(nDIPRD0), .nDIPRD1(nDIPRD1),

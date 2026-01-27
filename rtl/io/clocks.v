@@ -67,11 +67,16 @@ module clocks_sync(
         	phase_overflow <= 1'b0;
     	end
     	else begin
-        	if (TURBO_SPEED == 2'b00 || TURBO_SPEED == 2'b11) begin
+        	if (TURBO_SPEED == 2'b00) begin
             	// Normal mode (12MHz): use original 24MHz enable
             	phase_overflow <= CLK_EN_24M_P;
             	if (CLK_EN_24M_P)
                 	CLK_68KCLK <= ~CLK_68KCLK;
+        	end
+        	else if (TURBO_SPEED == 2'b11) begin
+            	// 24MHz mode: toggle every 48MHz cycle
+            	phase_overflow <= 1'b1;
+            	CLK_68KCLK <= ~CLK_68KCLK;
         	end
         	else begin
             	// Fractional modes (14MHz, 18MHz): use phase accumulator

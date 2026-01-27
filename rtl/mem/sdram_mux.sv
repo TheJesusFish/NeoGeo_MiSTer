@@ -22,6 +22,7 @@
 
 module sdram_mux(
 	input             CLK,
+	input       [1:0] TURBO_SPEED,
 
 	input             nRESET,
 	input             nSYSTEM_G,
@@ -234,7 +235,23 @@ module sdram_mux(
 				end
 
 				// Start requested access, if needed
-				if (M68K_RD_REQ | REQ_M68K_RD) begin
+				// In turbo mode, prioritize video reads over CPU to prevent graphical corruption
+				if ((CROM_RD_REQ | REQ_CROM_RD) & |TURBO_SPEED) begin
+					CROM_RD_REQ    <= 0;
+					CROM_RD_RUN    <= 1;
+					SDRAM_RD       <= 1;
+					SDRAM_ADDR     <= CROM_ADDR[26:1];
+				end
+				else if ((SROM_RD_REQ | REQ_SROM_RD) & |TURBO_SPEED) begin
+					SROM_RD_REQ    <= 0;
+					SFIX_RD_RUN    <= 1;
+					SDRAM_RD       <= 1;
+
+					SDRAM_ADDR     <= SYSTEM_CDx ? {8'b0_0000_100, S_LATCH[15:4], S_LATCH[2:0], ~S_LATCH[3]}:
+									       nSYSTEM_G ? {6'b0_0000_1, FIX_BANK, S_LATCH[15:4], S_LATCH[2:0], ~S_LATCH[3]}:
+															 {8'b0_0000_001, S_LATCH[15:4], S_LATCH[2:0], ~S_LATCH[3]};
+				end
+				else if (M68K_RD_REQ | REQ_M68K_RD) begin
 					M68K_RD_REQ    <= 0;
 					M68K_RD_RUN    <= 1;
 					CD_TR_RUN      <= CD_RD_SDRAM_SIG;
@@ -272,9 +289,9 @@ module sdram_mux(
 					// SFIX ROM (CD)		$0080000~$009FFFF
 					// S1 ROM (cart)		$0080000~$00FFFFF
 					// SFIX ROM (cart)	$0020000~$003FFFF
-					SDRAM_ADDR     <= SYSTEM_CDx ? {8'b0_0000_100,         S_LATCH[15:4], S_LATCH[2:0], ~S_LATCH[3]}:
+					SDRAM_ADDR     <= SYSTEM_CDx ? {8'b0_0000_100, S_LATCH[15:4], S_LATCH[2:0], ~S_LATCH[3]}:
 									       nSYSTEM_G ? {6'b0_0000_1, FIX_BANK, S_LATCH[15:4], S_LATCH[2:0], ~S_LATCH[3]}:
-															 {8'b0_0000_001,         S_LATCH[15:4], S_LATCH[2:0], ~S_LATCH[3]};
+															 {8'b0_0000_001, S_LATCH[15:4], S_LATCH[2:0], ~S_LATCH[3]};
 				end
 				else if (REQ_CD_WR | CD_WR_REQ) begin
 					CD_WR_REQ      <= 0;

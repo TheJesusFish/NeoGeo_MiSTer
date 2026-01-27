@@ -21,22 +21,31 @@
 module c1_wait(
 	input CLK, CLK_EN_68K_P, nAS,
 	input SYSTEM_CDx,
+	input [1:0] TURBO_SPEED,
 	input nROM_ZONE, nWRAM_ZONE, nPORT_ZONE, nCARD_ZONE, nSROM_ZONE,
+	input nLSPC_ZONE, nPAL_ZONE,
 	input nROMWAIT, nPWAIT0, nPWAIT1, PDTACK,
 	output nDTACK
 );
 
 	reg [2:0] WAIT_CNT;
-	
+
 	//assign nPDTACK = ~(nPORT_ZONE | PDTACK);		// Really a NOR ? May stall CPU if PDTACK = GND
-	
+
 	assign nDTACK = nAS | WAIT_MUX;
-	
+
 	// When nROMWAIT == 1, nDTACK = nAS for nROM_ZONE (no wait)
 	wire WAIT_MUX = (!nROM_ZONE & !nROMWAIT) ? (WAIT_CNT > 3) :
 			(!nPORT_ZONE & ( nPWAIT1 & !nPWAIT0)) ? (WAIT_CNT > 3) :
 			(!nPORT_ZONE & (!nPWAIT1 &  nPWAIT0)) ? (WAIT_CNT > 2) :
 			(!nCARD_ZONE) ? (WAIT_CNT > 3) :		// Maybe 2 but not important here, used JEIDA compliance
+			// In turbo mode, add wait states for video zones (palette + LSPC registers)
+			// to maintain correct timing with the fixed-rate video pipeline.
+			// Scale wait count with overclock speed to keep access time >= 12MHz equivalent:
+			//   14MHz: 2 waits (CNT>3), 18MHz: 3 waits (CNT>2), 24MHz: 4 waits (CNT>1)
+			(TURBO_SPEED == 2'b01 & (!nPAL_ZONE | !nLSPC_ZONE)) ? (WAIT_CNT > 3) :
+			(TURBO_SPEED == 2'b10 & (!nPAL_ZONE | !nLSPC_ZONE)) ? (WAIT_CNT > 2) :
+			(TURBO_SPEED == 2'b11 & (!nPAL_ZONE | !nLSPC_ZONE)) ? (WAIT_CNT > 1) :
 			1'b0;
 	
 	always @(posedge CLK)
