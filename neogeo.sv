@@ -215,7 +215,7 @@ assign HDMI_BOB_DEINT = 0;
 
 wire [1:0] ar       = status[33:32];
 wire       vcrop_en = status[34];
-wire 	   turbo = status[43];
+wire [1:0] turbo_speed = status[44:43];
 wire [3:0] vcopt    = status[38:35];
 reg        en216p;
 reg  [4:0] voff;
@@ -289,7 +289,15 @@ localparam CONF_STR = {
 	"O1,System Type,Console(AES),Arcade(MVS);",
 	"OM,BIOS,UniBIOS,Original;",
 	"O3,Video Mode,NTSC,PAL;",
-	"oB,Turbo,OFF,ON;",
+	"P1,Turbo;",
+	"-;",
+	"P1,!!! WARNING !!!;",
+	"P1,Turbo makes the core;",
+	"P1,unstable. Expect;",
+	"P1,graphical errors;",
+	"P1,and crashes.;",
+	"P1-;",
+	"P1oBC,Speed,Off (12MHz),14MHz,18MHz,24MHz;",
 	"-;",
 	"o9A,Input,Joystick or Spinner,Joystick,Spinner,Mouse(Irr.Maze);",
 	"-;",
@@ -1239,7 +1247,7 @@ assign sdram_ready = sdram2_ready & sdram1_ready;
 
 neo_d0 D0(
 	.CLK(CLK_48M),
-	.TURBO(turbo),
+	.TURBO_SPEED(turbo_speed),
 	.CLK_EN_24M_P(CLK_EN_24M_P),
 	.CLK_EN_24M_N(CLK_EN_24M_N),
 	.nRESET(nRESET), .nRESETP(nRESETP),

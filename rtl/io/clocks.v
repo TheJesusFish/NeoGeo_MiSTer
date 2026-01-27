@@ -20,7 +20,7 @@
 
 module clocks_sync(
 	input CLK,
-	input TURBO,
+	input [1:0] TURBO_SPEED,
 	input CLK_EN_24M_P,
 	input CLK_EN_24M_N,
 	input nRESETP,
@@ -39,20 +39,57 @@ module clocks_sync(
 );
 
 	reg [2:0] CLK_DIV;
+	reg [7:0] phase_acc;      // Phase accumulator for fractional divider
+	reg [7:0] phase_inc;      // How much to add each cycle
 	wire CLK_3M;
+	// Select phase increment based on turbo speed
+	// 0 = Off (12MHz):  increment 128 -> toggle at 24MHz rate -> 12MHz 68K
+	// 1 = 14MHz:        increment 149 -> toggle at ~28MHz rate -> ~14MHz 68K  
+	// 2 = 18MHz:        increment 192 -> toggle at ~36MHz rate -> ~18MHz 68K
+	// 3 = 24MHz:        increment 0 (special: toggle every cycle) -> 24MHz 68K
+	always @(*) begin
+    	case (TURBO_SPEED)
+        	2'b00: phase_inc = 8'd128;  // 12MHz (normal)
+        	2'b01: phase_inc = 8'd149;  // ~14MHz
+        	2'b10: phase_inc = 8'd192;  // ~18MHz
+        	2'b11: phase_inc = 8'd0;    // 24MHz (full speed - special case)
+    	endcase
+	end
 	
 	//assign CLK_68KCLKB = ~CLK_68KCLK;
 	assign CLK_68KCLKB = CLK_EN_68K_N;
 	
+	// Phase accumulator and 68K clock generation
+	reg phase_overflow;
 	always @(posedge CLK or negedge nRESETP)
 	begin
-		if (!nRESETP)
-			CLK_68KCLK <= 1'b0;	// Thanks ElectronAsh ! Real hw doesn't clearly init DFF
-		else if (CLK_EN_24M_P | TURBO)
-			CLK_68KCLK <= ~CLK_68KCLK;	// MV4 C4:A
+    	if (!nRESETP) begin
+        	CLK_68KCLK <= 1'b0;
+        	phase_acc <= 8'd0;
+        	phase_overflow <= 1'b0;
+    	end
+    	else begin
+        	if (TURBO_SPEED == 2'b11) begin
+            	// Full turbo (24MHz): toggle every cycle
+            	CLK_68KCLK <= ~CLK_68KCLK;
+            	phase_overflow <= 1'b1;
+        	end
+        	else if (TURBO_SPEED == 2'b00) begin
+            	// Normal mode (12MHz): use original 24MHz enable
+            	phase_overflow <= CLK_EN_24M_P;
+            	if (CLK_EN_24M_P)
+                	CLK_68KCLK <= ~CLK_68KCLK;
+        	end
+        	else begin
+            	// Fractional modes (14MHz, 18MHz): use phase accumulator
+            	{phase_overflow, phase_acc} <= phase_acc + phase_inc;
+            	if (phase_acc + phase_inc >= 256)
+                	CLK_68KCLK <= ~CLK_68KCLK;
+        	end
+    	end
 	end
-	assign CLK_EN_68K_P = ~CLK_68KCLK & (CLK_EN_24M_P | TURBO);
-	assign CLK_EN_68K_N =  CLK_68KCLK & (CLK_EN_24M_P | TURBO);
+	assign CLK_EN_68K_P = ~CLK_68KCLK & phase_overflow;
+	assign CLK_EN_68K_N =  CLK_68KCLK & phase_overflow;
 	
 	always @(posedge CLK, negedge nRESETP)
 	begin
