@@ -42,16 +42,17 @@ module clocks_sync(
 	reg [7:0] phase_acc;      // Phase accumulator for fractional divider
 	reg [7:0] phase_inc;      // How much to add each cycle
 	wire CLK_3M;
-	// Select phase increment based on turbo speed
-	// 0 = Off (12MHz):  increment 128 -> toggle at 24MHz rate -> 12MHz 68K
-	// 1 = 14MHz:        increment 149 -> toggle at ~28MHz rate -> ~14MHz 68K
-	// 2 = 18MHz:        increment 192 -> toggle at ~36MHz rate -> ~18MHz 68K
+	// Select phase increment based on turbo speed (Metal Slug CPU Boost)
+	// 0 = Off (12MHz stock): use original 24MHz enable
+	// 1 = 14MHz: increment 149 -> toggle at ~28MHz rate -> ~14MHz 68K
+	// 2 = 18MHz: increment 192 -> toggle at ~36MHz rate -> ~18MHz 68K
+	// 3 = 24MHz: toggle every cycle
 	always @(*) begin
-    	case (TURBO_SPEED)
-        	2'b01:   phase_inc = 8'd149;  // ~14MHz
-        	2'b10:   phase_inc = 8'd192;  // ~18MHz
-        	default: phase_inc = 8'd128;  // 12MHz (normal)
-    	endcase
+		case (TURBO_SPEED)
+			2'd1:    phase_inc = 8'd149;  // ~14MHz
+			2'd2:    phase_inc = 8'd192;  // ~18MHz
+			default: phase_inc = 8'd128;  // 12MHz or 24MHz (not used for 24MHz)
+		endcase
 	end
 	
 	//assign CLK_68KCLKB = ~CLK_68KCLK;
@@ -61,30 +62,30 @@ module clocks_sync(
 	reg phase_overflow;
 	always @(posedge CLK or negedge nRESETP)
 	begin
-    	if (!nRESETP) begin
-        	CLK_68KCLK <= 1'b0;
-        	phase_acc <= 8'd0;
-        	phase_overflow <= 1'b0;
-    	end
-    	else begin
-        	if (TURBO_SPEED == 2'b00) begin
-            	// Normal mode (12MHz): use original 24MHz enable
-            	phase_overflow <= CLK_EN_24M_P;
-            	if (CLK_EN_24M_P)
-                	CLK_68KCLK <= ~CLK_68KCLK;
-        	end
-        	else if (TURBO_SPEED == 2'b11) begin
-            	// 24MHz mode: toggle every 48MHz cycle
-            	phase_overflow <= 1'b1;
-            	CLK_68KCLK <= ~CLK_68KCLK;
-        	end
-        	else begin
-            	// Fractional modes (14MHz, 18MHz): use phase accumulator
-            	{phase_overflow, phase_acc} <= phase_acc + phase_inc;
-            	if (phase_acc + phase_inc >= 256)
-                	CLK_68KCLK <= ~CLK_68KCLK;
-        	end
-    	end
+		if (!nRESETP) begin
+			CLK_68KCLK <= 1'b0;
+			phase_acc <= 8'd0;
+			phase_overflow <= 1'b0;
+		end
+		else begin
+			if (TURBO_SPEED == 2'd0) begin
+				// Stock mode (12MHz): use original 24MHz enable
+				phase_overflow <= CLK_EN_24M_P;
+				if (CLK_EN_24M_P)
+					CLK_68KCLK <= ~CLK_68KCLK;
+			end
+			else if (TURBO_SPEED == 2'd3) begin
+				// 24MHz mode: toggle every 48MHz cycle
+				phase_overflow <= 1'b1;
+				CLK_68KCLK <= ~CLK_68KCLK;
+			end
+			else begin
+				// Fractional modes (18MHz, 20MHz): use phase accumulator
+				{phase_overflow, phase_acc} <= phase_acc + phase_inc;
+				if (phase_acc + phase_inc >= 256)
+					CLK_68KCLK <= ~CLK_68KCLK;
+			end
+		end
 	end
 	assign CLK_EN_68K_P = ~CLK_68KCLK & phase_overflow;
 	assign CLK_EN_68K_N =  CLK_68KCLK & phase_overflow;

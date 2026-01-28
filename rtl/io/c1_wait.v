@@ -39,13 +39,12 @@ module c1_wait(
 			(!nPORT_ZONE & ( nPWAIT1 & !nPWAIT0)) ? (WAIT_CNT > 3) :
 			(!nPORT_ZONE & (!nPWAIT1 &  nPWAIT0)) ? (WAIT_CNT > 2) :
 			(!nCARD_ZONE) ? (WAIT_CNT > 3) :		// Maybe 2 but not important here, used JEIDA compliance
-			// In turbo mode, add wait states for video zones (palette + LSPC registers)
+			// Add wait states for video zones (palette + LSPC registers)
 			// to maintain correct timing with the fixed-rate video pipeline.
-			// Scale wait count with overclock speed to keep access time >= 12MHz equivalent:
-			//   14MHz: 2 waits (CNT>3), 18MHz: 3 waits (CNT>2), 24MHz: 4 waits (CNT>1)
-			(TURBO_SPEED == 2'b01 & (!nPAL_ZONE | !nLSPC_ZONE)) ? (WAIT_CNT > 3) :
-			(TURBO_SPEED == 2'b10 & (!nPAL_ZONE | !nLSPC_ZONE)) ? (WAIT_CNT > 2) :
-			(TURBO_SPEED == 2'b11 & (!nPAL_ZONE | !nLSPC_ZONE)) ? (WAIT_CNT > 1) :
+			// 0=Off (no extra waits), 1=14MHz(>3), 2=18MHz(>2), 3=24MHz(>1)
+			(TURBO_SPEED == 2'd1 & (!nPAL_ZONE | !nLSPC_ZONE)) ? (WAIT_CNT > 3) :
+			(TURBO_SPEED == 2'd2 & (!nPAL_ZONE | !nLSPC_ZONE)) ? (WAIT_CNT > 2) :
+			(TURBO_SPEED == 2'd3 & (!nPAL_ZONE | !nLSPC_ZONE)) ? (WAIT_CNT > 1) :
 			1'b0;
 	
 	always @(posedge CLK)

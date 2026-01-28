@@ -289,7 +289,7 @@ localparam CONF_STR = {
 	"O1,System Type,Console(AES),Arcade(MVS);",
 	"OM,BIOS,UniBIOS,Original;",
 	"O3,Video Mode,NTSC,PAL;",
-	"oBC,Turbo (Unstable),Off,14MHz,18MHz,24MHz;",
+	"oBC,Metal Slug CPU Boost,Off,14MHz,18MHz,24MHz;",
 	"-;",
 	"o9A,Input,Joystick or Spinner,Joystick,Spinner,Mouse(Irr.Maze);",
 	"-;",
